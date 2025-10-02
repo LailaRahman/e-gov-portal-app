@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Request Details</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8fafc;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding-bottom: 2rem;
+    }
+
+    .container-box {
+      max-width: 800px;
+      margin: 3rem auto;
+      background: #fff;
+      padding: 2rem;
+      border-radius: 0.6rem;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      color: #343a40;
+    }
+
+    .info-label {
+      font-weight: 600;
+      color: #495057;
+    }
+
+    .alert {
+      font-weight: 600;
+      border-radius: 0.5rem;
+    }
+
+    .document-link {
+      word-break: break-word;
+    }
+
+    .btn-back {
+      margin-top: 2rem;
+      display: inline-block;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container container-box">
+    <h2 class="fw-bold text-primary">Request Details</h2>
+
+    <!-- Request Info -->
+    <p><span class="info-label">Service:</span> <%= request.service.name %></p>
+    <p><span class="info-label">Status:</span> <%= request.status.replace('_', ' ') %></p>
+    <p><span class="info-label">Citizen:</span> <%= request.Citizen.name %> (<%= request.Citizen.email %>)</p>
+    <p><span class="info-label">Submitted On:</span> <%= new Date(request.createdAt).toLocaleString() %></p>
+
+    <% if (request.Reviewer) { %>
+      <p><span class="info-label">Reviewed By:</span> <%= request.Reviewer.name %> (<%= request.Reviewer.email %>)</p>
+    <% } %>
+
+    <!-- Documents -->
+    <h5 class="mt-4 mb-3">Submitted Documents</h5>
+
+    <% if (!request.documents || request.documents.length === 0) { %>
+      <p class="text-muted">No documents submitted.</p>
+    <% } else { %>
+      <ul class="list-group">
+        <% request.documents.forEach(doc => { %>
+          <li class="list-group-item d-flex justify-content-between align-items-start">
+            <div>
+              <a class="document-link" href="/<%= doc.file_path.replace(/\\/g, '/') %>" target="_blank" rel="noopener noreferrer">
+                <%= doc.original_name %>
+              </a>
+              <div class="text-muted small"><%= doc.file_type %></div>
+            </div>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+
+    <!-- Back Link -->
+    <a href="/officer/dashboard" class="btn btn-outline-primary btn-back mt-4">&larr; Back to Dashboard</a>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+
+<h1>All Requests</h1>
+
+<table border="1">
+  <thead>
+    <tr>
+      <th>Request ID</th>
+      <th>Citizen</th>
+      <th>Reviewer</th>
+      <th>Service</th>
+      <th>Department</th>
+      <th>Status</th>
+      <th>Payment</th>
+      <th>Submitted At</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% if (requests.length === 0) { %>
+      <tr>
+        <td colspan="8">No requests found.</td>
+      </tr>
+    <% } else { %>
+      <% requests.forEach(request => { %>
+        <tr>
+          <td><%= request.id %></td>
+          <td><%= request.Citizen?.name || 'N/A' %> (<%= request.Citizen?.email || '' %>)</td>
+          <td><%= request.Reviewer?.name || 'Unassigned' %></td>
+          <td><%= request.service?.name || 'N/A' %></td>
+          <td><%= request.service?.department?.name || 'N/A' %></td>
+          <td><%= request.status %></td>
+          <td><%= request.payment_status %> ($<%= request.payment_amount %>)</td>
+          <td><%= request.createdAt.toDateString() %></td>
+        </tr>
+      <% }) %>
+    <% } %>
+  </tbody>
+</table>
+

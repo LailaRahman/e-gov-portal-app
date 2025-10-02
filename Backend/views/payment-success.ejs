@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Payment Success</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background: #f8fafc;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 3rem;
+      text-align: center;
+    }
+    .success-icon {
+      font-size: 5rem;
+      color: #198754;
+    }
+    h1 {
+      margin-top: 1rem;
+      color: #198754;
+      font-weight: 700;
+    }
+    p {
+      font-size: 1.2rem;
+      margin: 1rem 0 2rem;
+    }
+    a.btn-home {
+      font-weight: 600;
+      padding: 0.5rem 2rem;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <div class="success-icon">&#10004;</div>
+    <h1>Payment Successful!</h1>
+    <p>Thank you for your payment. Your request ID: <strong><%= requestId %></strong> has been updated.</p>
+    <a href="/citizen/dashboard" class="btn btn-success btn-home">Back to Dashboard</a>
+  </div>
+</body>
+</html>
