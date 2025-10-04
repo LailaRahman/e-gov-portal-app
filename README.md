@@ -6,7 +6,7 @@
 
 ## What is this project about?
 
-Imagine you don't need to visit government offices for things like passport renewal, national ID updates, business licenses, or land registration. Instead, you log in to a website, submit your request, upload necessary documents, pay fees, and then simply wait for approval.
+Imagine you don't need to visit government offices for things like passport renewal, national ID updates, business licenses (Interior Department), or other neccessary departmnt. Instead, you log in to a website, submit your request, upload necessary documents, pay fees, and then simply wait for approval.
 
 This project is an **online portal** that makes this possible.
 
