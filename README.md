@@ -44,7 +44,7 @@ The backend is built with **Node.js**, **Express**, and **PostgreSQL** with **Se
 
 ### 3. Service Requests
 
-- Departments offer specific services (e.g., Passport Renewal, Business License).
+- Departments offer specific services (e.g., Passport Renewal, Business License or Interior).
 - Citizens submit service applications with description and required documents.
 - Application statuses flow through: Submitted → Under Review → Approved / Rejected.
 
