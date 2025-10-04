@@ -4,7 +4,7 @@ import { Op } from 'sequelize';
 
 const router = express.Router();
 
-// ✅ Middleware: Ensure officer OR department_head is logged in
+// Middleware: Ensure officer OR department_head is logged in
 function ensureOfficer(req, res, next) {
   const { user } = req.session;
   if (!user || (user.role !== 'officer' && user.role !== 'headdepartment')) {
@@ -13,7 +13,7 @@ function ensureOfficer(req, res, next) {
   next();
 }
 
-// ✅ GET /officer/dashboard - View requests for officer's department with filters
+// GET /officer/dashboard - View requests for officer's department with filters
 router.get('/dashboard', ensureOfficer, async (req, res) => {
   try {
     const { department_id } = req.session.user;
@@ -86,7 +86,7 @@ router.get('/dashboard', ensureOfficer, async (req, res) => {
   }
 });
 
-// ✅ GET /officer/requests/:id - View a single request with assignment logic
+// GET /officer/requests/:id - View a single request with assignment logic
 router.get('/requests/:id', ensureOfficer, async (req, res) => {
   try {
     const { department_id, id: officerId } = req.session.user;
@@ -159,7 +159,7 @@ router.get('/requests/:id', ensureOfficer, async (req, res) => {
   }
 });
 
-// ✅ POST /officer/requests/:id/status - Update status (only assigned officer) with lock
+// POST /officer/requests/:id/status - Update status (only assigned officer) with lock
 router.post('/requests/:id/status', ensureOfficer, async (req, res) => {
   const { status } = req.body;
   const officerId = req.session.user.id;
@@ -225,7 +225,7 @@ router.post('/requests/:id/status', ensureOfficer, async (req, res) => {
   }
 });
 
-// ✅ GET /officer/profile - View profile
+// GET /officer/profile - View profile
 router.get('/profile', ensureOfficer, async (req, res) => {
   try {
     const officer = await User.findByPk(req.session.user.id);
@@ -247,7 +247,7 @@ router.get('/profile', ensureOfficer, async (req, res) => {
   }
 });
 
-// ✅ POST /officer/profile - Update profile
+// POST /officer/profile - Update profile
 router.post('/profile', ensureOfficer, async (req, res) => {
   try {
     const { name, email, job_title } = req.body;

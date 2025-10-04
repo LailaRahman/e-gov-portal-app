@@ -11,7 +11,9 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import methodOverride from 'method-override';
 import fs from 'fs';
-import { sequelize, User, Department, Service, Request, Document, Payment } from './models/index.js';
+
+// Added Notification import here
+import { sequelize, User, Department, Service, Request, Document, Payment, Notification } from './models/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -66,7 +68,6 @@ app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   next();
 });
-
 
 app.use(methodOverride('_method')); 
 
@@ -165,6 +166,7 @@ app.use((err, req, res, next) => {
     await Request.sync();
     await Document.sync();
     await Payment.sync();
+    await Notification.sync(); // <-- Added Notification sync here
 
     console.log('✅ Database synced.');
 

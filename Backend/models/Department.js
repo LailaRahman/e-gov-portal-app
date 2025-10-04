@@ -9,7 +9,7 @@ export default (sequelize, DataTypes) => {
       },
     },
     {
-      freezeTableName: true, // Prevent Sequelize pluralizing table name
+      freezeTableName: true,
       tableName: 'departments',
       timestamps: true,
     }

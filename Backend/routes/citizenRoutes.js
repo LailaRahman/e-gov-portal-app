@@ -4,11 +4,11 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import multer from 'multer';
 import path from 'path';
-import { User, Department, Request, Service, Document } from '../models/index.js';
+import { User, Department, Request, Service, Document, Notification } from '../models/index.js';
 
 const router = express.Router();
 
-// Multer setup for file uploads
+// Multer config
 const storage = multer.diskStorage({
   destination(req, file, cb) {
     cb(null, 'uploads/documents/');
@@ -33,21 +33,19 @@ const upload = multer({
   }
 });
 
-// Middleware to ensure user is a citizen
+// Middleware
 function ensureCitizen(req, res, next) {
-  if (req.session?.user?.role === 'citizen') {
-    return next();
-  }
+  if (req.session?.user?.role === 'citizen') return next();
   req.flash('error', 'Please log in as a citizen to access this page.');
   return res.redirect('/login');
 }
 
-// GET: Render login page
-router.get('/login', (req, res) => {
-  res.render('citizens/login');
-});
+// Routes
 
-// GET: Render register page
+// GET: Login
+router.get('/login', (req, res) => res.render('citizens/login'));
+
+// GET: Register
 router.get('/register', async (req, res) => {
   try {
     const departments = await Department.findAll();
@@ -87,11 +85,11 @@ router.post('/register', async (req, res) => {
     });
 
     req.flash('success', 'Registration successful. Please log in.');
-    return res.redirect('/login');
+    res.redirect('/login');
   } catch (error) {
     console.error('Registration error:', error);
     req.flash('error', 'Registration failed. Please try again.');
-    return res.redirect('/register');
+    res.redirect('/register');
   }
 });
 
@@ -101,14 +99,8 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ where: { email } });
 
-    if (!user) {
-      req.flash('error', 'User not found.');
-      return res.redirect('/login');
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      req.flash('error', 'Invalid password.');
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      req.flash('error', 'Invalid email or password.');
       return res.redirect('/login');
     }
 
@@ -120,22 +112,25 @@ router.post('/login', async (req, res) => {
       department_id: user.department_id || null,
     };
 
-    if (user.role === 'citizen') return res.redirect('/citizen/dashboard');
-    if (user.role === 'officer') return res.redirect('/officer/dashboard');
-    if (user.role === 'admin') return res.redirect('/admin/dashboard');
+    const redirectMap = {
+      citizen: '/citizen/dashboard',
+      officer: '/officer/dashboard',
+      admin: '/admin/dashboard',
+    };
 
-    return res.redirect('/login');
+    res.redirect(redirectMap[user.role] || '/login');
   } catch (error) {
     console.error('Login error:', error);
     req.flash('error', 'Login failed. Please try again.');
-    return res.redirect('/login');
+    res.redirect('/login');
   }
 });
 
-// GET: Citizen dashboard
+// GET: Dashboard
 router.get('/dashboard', ensureCitizen, async (req, res) => {
   try {
     const citizenId = req.session.user.id;
+
     const requests = await Request.findAll({
       where: { citizen_id: citizenId },
       include: [
@@ -153,19 +148,25 @@ router.get('/dashboard', ensureCitizen, async (req, res) => {
       order: [['createdAt', 'DESC']],
     });
 
+    const notifications = await Notification.findAll({
+      where: { UserId: citizenId },
+      order: [['createdAt', 'DESC']],
+    });
+
     res.render('citizens/dashboard', {
       user: req.session.user,
       requests,
+      notifications,
       success: req.flash('success'),
-      error: req.flash('error')
+      error: req.flash('error'),
     });
   } catch (err) {
-    console.error('Failed to load citizen dashboard:', err);
+    console.error('Dashboard error:', err);
     res.status(500).send('Error loading dashboard');
   }
 });
 
-// GET: Apply service page
+// GET: Apply
 router.get('/apply', ensureCitizen, async (req, res) => {
   try {
     const departments = await Department.findAll();
@@ -181,17 +182,17 @@ router.get('/apply', ensureCitizen, async (req, res) => {
       error: req.flash('error'),
     });
   } catch (error) {
-    console.error('Failed to load apply page:', error);
+    console.error('Apply page error:', error);
     req.flash('error', 'Failed to load apply page.');
-    return res.redirect('/citizen/dashboard');
+    res.redirect('/citizen/dashboard');
   }
 });
 
-// POST: Apply service with file upload
+// POST: Apply
 router.post('/apply', ensureCitizen, (req, res, next) => {
   upload.single('document')(req, res, function (err) {
     if (err) {
-      console.error('Multer upload error:', err.message);
+      console.error('Multer error:', err.message);
       req.flash('error', err.message);
       return res.redirect('/citizen/apply');
     }
@@ -202,31 +203,25 @@ router.post('/apply', ensureCitizen, (req, res, next) => {
     const citizenId = req.session.user.id;
     const { service_id, description } = req.body;
 
-    if (!service_id) {
-      req.flash('error', 'Please select a service.');
+    if (!service_id || !req.file) {
+      req.flash('error', 'Service and document are required.');
       return res.redirect('/citizen/apply');
     }
-    if (!req.file) {
-      req.flash('error', 'Please upload a document.');
-      return res.redirect('/citizen/apply');
-    }
-
-    const desc = description ? description.trim() : '';
 
     const service = await Service.findByPk(service_id);
     if (!service) {
-      req.flash('error', 'Selected service is invalid.');
+      req.flash('error', 'Invalid service.');
       return res.redirect('/citizen/apply');
     }
 
     const newRequest = await Request.create({
-  citizen_id: citizenId,
-  service_id: service.id,
-  description: desc,
-  status: 'submitted',
-  payment_status: 'pending',
-  payment_amount: service.fee,
-});
+      citizen_id: citizenId,
+      service_id: service.id,
+      description: description?.trim() || '',
+      status: 'submitted',
+      payment_status: 'pending',
+      payment_amount: service.fee,
+    });
 
     await Document.create({
       request_id: newRequest.id,
@@ -235,36 +230,44 @@ router.post('/apply', ensureCitizen, (req, res, next) => {
       original_name: req.file.originalname,
     });
 
-    req.flash('success', 'Application submitted successfully.');
-    return res.redirect('/citizen/dashboard');
+    await Notification.create({
+      message: `Your application for ${service.name} has been submitted.`,
+      is_read: false,
+      UserId: citizenId,
+    });
+
+    req.flash('success', 'Application submitted. Proceed to payment.');
+    res.redirect(`/citizen/payment/${newRequest.id}`);
   } catch (error) {
-    console.error('Error submitting application:', error);
-    req.flash('error', 'Failed to submit application. Please try again.');
-    return res.redirect('/citizen/apply');
+    console.error('Application submission error:', error);
+    req.flash('error', 'Application submission failed.');
+    res.redirect('/citizen/apply');
   }
 });
 
-// GET: Payment page
+// GET: Payment
 router.get('/payment/:requestId', ensureCitizen, async (req, res) => {
   try {
     const request = await Request.findByPk(req.params.requestId, {
       include: { model: Service, as: 'service' }
     });
-    if (!request) return res.redirect('/citizen/dashboard');
-    if (request.service.fee <= 0) return res.redirect('/citizen/dashboard');
+
+    if (!request || request.service.fee <= 0) {
+      return res.redirect('/citizen/dashboard');
+    }
 
     res.render('citizens/payment', {
       service: request.service,
       requestId: request.id
     });
   } catch (err) {
-    console.error('Error loading payment page:', err);
+    console.error('Payment page error:', err);
     req.flash('error', 'Unable to load payment page.');
     res.redirect('/citizen/dashboard');
   }
 });
 
-// POST: Confirm payment
+// POST: Payment Confirm
 router.post('/payment/confirm', ensureCitizen, async (req, res) => {
   try {
     const { requestId } = req.body;
@@ -275,23 +278,22 @@ router.post('/payment/confirm', ensureCitizen, async (req, res) => {
       return res.redirect('/citizen/dashboard');
     }
 
-    request.payment_status = 'paid';  // consistent field name
+    request.payment_status = 'paid';
     await request.save();
 
-    req.flash('success', 'Payment successful. Your application is now under review.');
-    return res.redirect(`/citizen/payment-success/${requestId}`);
+    req.flash('success', 'Payment successful. Application under review.');
+    res.redirect(`/citizen/payment-success/${requestId}`);
   } catch (err) {
-    console.error('Error confirming payment:', err);
+    console.error('Payment confirm error:', err);
     req.flash('error', 'Payment confirmation failed.');
-    return res.redirect('/citizen/dashboard');
+    res.redirect('/citizen/dashboard');
   }
 });
 
-// GET: Payment success page
+// GET: Payment Success
 router.get('/payment-success/:requestId', ensureCitizen, async (req, res) => {
   try {
-    const requestId = req.params.requestId;
-    const request = await Request.findByPk(requestId, {
+    const request = await Request.findByPk(req.params.requestId, {
       include: { model: Service, as: 'service' }
     });
 
@@ -302,17 +304,16 @@ router.get('/payment-success/:requestId', ensureCitizen, async (req, res) => {
 
     res.render('citizens/payment-success', { request });
   } catch (error) {
-    console.error('Error loading payment success page:', error);
-    req.flash('error', 'Failed to load payment success page.');
+    console.error('Payment success error:', error);
+    req.flash('error', 'Failed to load success page.');
     res.redirect('/citizen/dashboard');
   }
 });
 
-// GET: Citizen profile
+// GET: Profile
 router.get('/profile', ensureCitizen, async (req, res) => {
   try {
-    const userId = req.session.user.id;
-    const user = await User.findByPk(userId);
+    const user = await User.findByPk(req.session.user.id);
 
     if (!user) {
       req.flash('error', 'User not found.');
@@ -325,44 +326,36 @@ router.get('/profile', ensureCitizen, async (req, res) => {
       error: req.flash('error'),
     });
   } catch (error) {
-    console.error('Error loading profile:', error);
+    console.error('Profile page error:', error);
     req.flash('error', 'Failed to load profile.');
-    return res.redirect('/citizen/dashboard');
+    res.redirect('/citizen/dashboard');
   }
 });
 
-// POST: Update profile
+// POST: Update Profile
 router.post('/profile', ensureCitizen, async (req, res) => {
   try {
-    const userId = req.session.user.id;
     const { name, national_id, dob, contact } = req.body;
+    const user = await User.findByPk(req.session.user.id);
 
-    if (!name) {
-      req.flash('error', 'Name is required.');
-      return res.redirect('/citizen/profile');
-    }
-
-    const user = await User.findByPk(userId);
     if (!user) {
       req.flash('error', 'User not found.');
-      return res.redirect('/citizen/profile');
+      return res.redirect('/citizen/dashboard');
     }
 
     user.name = name;
     user.national_id = national_id || null;
     user.dob = dob ? new Date(dob) : null;
     user.contact = contact || null;
-
     await user.save();
 
     req.session.user.name = user.name;
-
     req.flash('success', 'Profile updated successfully.');
-    return res.redirect('/citizen/profile');
+    res.redirect('/citizen/profile');
   } catch (error) {
-    console.error('Error updating profile:', error);
+    console.error('Profile update error:', error);
     req.flash('error', 'Failed to update profile.');
-    return res.redirect('/citizen/profile');
+    res.redirect('/citizen/profile');
   }
 });
 

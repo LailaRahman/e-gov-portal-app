@@ -12,12 +12,12 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'departments', // lowercase to match DB table name
+        model: 'departments',
         key: 'id',
       },
     },
   }, {
-    tableName: 'services',  // lowercase table name
+    tableName: 'services', 
     timestamps: true,
     underscored: true,
   });
